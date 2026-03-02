@@ -1,29 +1,39 @@
-const CACHE_NAME = 'klbnuri-v1';
-const ASSETS = [
-  '/klbnuri/',
-  '/klbnuri/index.html',
-  '/klbnuri/data.js',
-  '/klbnuri/manifest.json',
-];
+// KLBnuri Service Worker
+// 버전을 바꾸면 캐시가 자동으로 갱신됩니다
+const CACHE_VERSION = 'klbnuri-202603021106';
+const CACHE_NAME = CACHE_VERSION;
 
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
-  );
+// 설치: 새 캐시 생성
+self.addEventListener('install', function(e) {
+  console.log('[SW] 설치:', CACHE_NAME);
+  // 즉시 활성화 (기다리지 않음)
   self.skipWaiting();
 });
 
-self.addEventListener('activate', e => {
+// 활성화: 이전 캐시 전부 삭제
+self.addEventListener('activate', function(e) {
+  console.log('[SW] 활성화, 이전 캐시 삭제');
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+    caches.keys().then(function(keys) {
+      return Promise.all(
+        keys.filter(function(k) { return k !== CACHE_NAME; })
+            .map(function(k) {
+              console.log('[SW] 삭제:', k);
+              return caches.delete(k);
+            })
+      );
+    }).then(function() {
+      // 현재 열린 페이지도 즉시 제어
+      return self.clients.claim();
+    })
   );
-  self.clients.claim();
 });
 
-self.addEventListener('fetch', e => {
+// fetch: 항상 네트워크 우선, 실패시 캐시
+self.addEventListener('fetch', function(e) {
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
+    fetch(e.request).catch(function() {
+      return caches.match(e.request);
+    })
   );
 });
