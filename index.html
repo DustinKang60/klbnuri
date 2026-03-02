@@ -1,4 +1,4 @@
-<!-- KLBnuri v4.0 | 빌드: 2026-03-02 11:06 | 사망검색수정+내보내기+가져오기 -->
+<!-- KLBnuri v4.1 | 빌드: 2026-03-02 11:14 | 설정패널 props 수정 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -326,6 +326,8 @@ function SettingsPanel(props) {
   var onClose = props.onClose;
   var fontSize = props.fontSize;
   var setFontSize = props.setFontSize;
+  var onExport = props.onExport;
+  var onImport = props.onImport;
 
   var currentIdx = FONT_SIZES.findIndex(function(s) { return s.value === fontSize; });
   var currentLabel = currentIdx >= 0 ? FONT_SIZES[currentIdx].label : '보통';
