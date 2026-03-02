@@ -538,6 +538,10 @@ function App() {
   var filtered = data.filter(function(r) {
     if (!query.trim()) return true;
     var q = query.trim();
+    // '사망' 키워드로 검색하면 사망일자가 입력된 사람 전체 반환
+    if (q === '사망' || q === '사망자') {
+      return !!r['사망일자'];
+    }
     if (tab === 'all') {
       return COLUMNS.some(function(c) { return r[c] && r[c].toString().indexOf(q) >= 0; });
     }
