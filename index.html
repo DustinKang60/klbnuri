@@ -1,4 +1,4 @@
-<!-- KLBnuri v4.1 | 빌드: 2026-03-02 11:14 | 설정패널 props 수정 -->
+<!-- KLBnuri v4.2 | 빌드: 2026-03-02 11:19 | 설정패널 완전재작성 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -329,24 +329,33 @@ function SettingsPanel(props) {
   var onExport = props.onExport;
   var onImport = props.onImport;
 
-  var currentIdx = FONT_SIZES.findIndex(function(s) { return s.value === fontSize; });
-  var currentLabel = currentIdx >= 0 ? FONT_SIZES[currentIdx].label : '보통';
+  var currentIdx = 0;
+  for (var si = 0; si < FONT_SIZES.length; si++) {
+    if (FONT_SIZES[si].value === fontSize) { currentIdx = si; break; }
+  }
+  var currentLabel = FONT_SIZES[currentIdx] ? FONT_SIZES[currentIdx].label : '보통';
+  var canDecrease = currentIdx > 0;
+  var canIncrease = currentIdx < FONT_SIZES.length - 1;
 
   function decrease() {
-    if (currentIdx > 0) setFontSize(FONT_SIZES[currentIdx - 1].value);
+    if (canDecrease) { setFontSize(FONT_SIZES[currentIdx - 1].value); }
   }
   function increase() {
-    if (currentIdx < FONT_SIZES.length - 1) setFontSize(FONT_SIZES[currentIdx + 1].value);
+    if (canIncrease) { setFontSize(FONT_SIZES[currentIdx + 1].value); }
   }
+
+  var decBtnStyle = canDecrease ? {} : {opacity: '0.3'};
+  var incBtnStyle = canIncrease ? {} : {opacity: '0.3'};
 
   return (
     <div className="panel-overlay" onClick={onClose}>
       <div className="settings-panel" onClick={function(e) { e.stopPropagation(); }}>
         <div className="panel-header">
-          <h2>⚙️ 설정</h2>
-          <button className="panel-close" onClick={onClose}>✕</button>
+          <h2>설정</h2>
+          <button className="panel-close" onClick={onClose}>X</button>
         </div>
         <div className="settings-body">
+
           <div className="settings-section-title">화면 표시</div>
           <div className="settings-row">
             <div className="settings-label">
@@ -354,23 +363,23 @@ function SettingsPanel(props) {
               <small>현재: {currentLabel} ({fontSize}px)</small>
             </div>
             <div className="size-control">
-              <button className="size-btn" onClick={decrease} disabled={currentIdx === 0}>−</button>
+              <button className="size-btn" onClick={decrease} style={decBtnStyle}>-</button>
               <span className="size-value">{fontSize}</span>
-              <button className="size-btn" onClick={increase} disabled={currentIdx === FONT_SIZES.length - 1}>＋</button>
+              <button className="size-btn" onClick={increase} style={incBtnStyle}>+</button>
             </div>
           </div>
           <div className="size-preview" style={{fontSize: fontSize + 'px'}}>
             <div className="size-preview-name">홍길동</div>
-            <div className="size-preview-sub" style={{fontSize: (fontSize - 2) + 'px'}}>서울고 | 서울대 | 장기신용은행</div>
+            <div className="size-preview-sub">서울고 | 서울대 | 장기신용은행</div>
           </div>
 
-          <div style={{height:'1px', background:'#f0f0f0', margin:'24px 0'}}></div>
+          <div style={{height: '1px', background: '#f0f0f0', margin: '24px 0'}}></div>
           <div className="settings-section-title">데이터 관리</div>
 
           <div className="settings-row">
             <div className="settings-label">
               자료 내보내기
-              <small>전체 데이터를 파일로 저장·공유</small>
+              <small>전체 데이터를 카톡 등으로 공유</small>
             </div>
             <button className="btn btn-primary btn-sm" onClick={onExport}>내보내기</button>
           </div>
@@ -382,7 +391,8 @@ function SettingsPanel(props) {
             </div>
             <button className="btn btn-outline btn-sm" onClick={onImport}>가져오기</button>
           </div>
-          <input type="file" id="import-file-input" accept=".json" style={{display:'none'}} />
+          <input type="file" id="import-file-input" accept=".json" style={{display: 'none'}} />
+
         </div>
       </div>
     </div>
