@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>KLB Nuri</title>
+  <meta name="theme-color" content="#1a2744" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="KLBnuri" />
+  <link rel="manifest" href="manifest.json" />
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="data.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+    #root { min-height: 100vh; }
+
+    /* ── 공통 ── */
+    .btn {
+      border: none; cursor: pointer; border-radius: 8px;
+      font-size: 14px; font-weight: 600; padding: 8px 16px;
+      transition: opacity .15s;
+    }
+    .btn:active { opacity: .75; }
+    .btn-primary   { background: #1a2744; color: #fff; }
+    .btn-gold      { background: #c9a84c; color: #fff; }
+    .btn-danger    { background: #d9534f; color: #fff; }
+    .btn-outline   { background: transparent; border: 1.5px solid #1a2744; color: #1a2744; }
+    .btn-sm        { padding: 5px 11px; font-size: 12px; }
+
+    /* ── 헤더 ── */
+    .header {
+      background: linear-gradient(135deg, #1a2744 0%, #2c3f6e 100%);
+      color: #fff; padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,.3);
+    }
+    .header-title { font-size: 20px; font-weight: 700; letter-spacing: 1px; }
+    .header-title span { color: #c9a84c; }
+    .header-count { font-size: 12px; color: #a0aec0; }
+
+    /* ── 검색바 ── */
+    .search-bar {
+      background: #fff; padding: 12px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+    .search-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .search-input {
+      flex: 1; border: 1.5px solid #d0d5dd; border-radius: 8px;
+      padding: 10px 14px; font-size: 15px; outline: none;
+      transition: border-color .2s;
+    }
+    .search-input:focus { border-color: #1a2744; }
+    .search-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tab {
+      padding: 5px 12px; border-radius: 20px; font-size: 13px;
+      cursor: pointer; border: 1.5px solid #d0d5dd;
+      background: #fff; color: #555; transition: all .15s; font-weight: 500;
+    }
+    .tab.active { background: #1a2744; color: #fff; border-color: #1a2744; }
+
+    /* ── 카드 리스트 ── */
+    .list-wrap { padding: 12px; }
+    .card {
+      background: #fff; border-radius: 10px; margin-bottom: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      cursor: pointer; transition: box-shadow .15s;
+      overflow: hidden;
+    }
+    .card:active { box-shadow: 0 3px 12px rgba(26,39,68,.2); }
+    .card-main {
+      padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: #1a2744; color: #c9a84c;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 700; flex-shrink: 0;
+    }
+    .card-info { flex: 1; min-width: 0; }
+    .card-name { font-size: 16px; font-weight: 700; color: #1a2744; }
+    .card-sub { font-size: 12px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-arrow { color: #bbb; font-size: 18px; }
+
+    /* ── 빈 상태 ── */
+    .empty { text-align: center; padding: 60px 20px; color: #aaa; }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+    /* ── 상세 / 편집 패널 ── */
+    .panel-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      z-index: 200; display: flex; align-items: flex-end;
+    }
+    .panel {
+      background: #fff; width: 100%; max-height: 90vh;
+      border-radius: 20px 20px 0 0;
+      overflow-y: auto; animation: slideUp .25s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .panel-header {
+      position: sticky; top: 0; background: #1a2744;
+      color: #fff; padding: 16px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-radius: 20px 20px 0 0;
+    }
+    .panel-header h2 { font-size: 17px; font-weight: 700; }
+    .panel-close {
+      background: transparent; border: none; color: #fff;
+      font-size: 22px; cursor: pointer; line-height: 1;
+    }
+    .panel-body { padding: 16px 20px; }
+
+    /* ── 섹션 그룹 ── */
+    .section { margin-bottom: 20px; }
+    .section-title {
+      font-size: 12px; font-weight: 700; color: #c9a84c;
+      text-transform: uppercase; letter-spacing: .8px;
+      margin-bottom: 8px; padding-bottom: 4px;
+      border-bottom: 1.5px solid #f0f0f0;
+    }
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .field { display: flex; flex-direction: column; gap: 3px; }
+    .field.full { grid-column: 1 / -1; }
+    .field-label { font-size: 11px; color: #999; font-weight: 600; }
+    .field-value { font-size: 14px; color: #222; word-break: break-all; }
+    .field-value.empty-val { color: #ccc; font-style: italic; }
+
+    /* ── 편집 폼 ── */
+    .form-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    .form-label { font-size: 12px; color: #555; font-weight: 600; }
+    .form-input {
+      border: 1.5px solid #d0d5dd; border-radius: 7px;
+      padding: 8px 12px; font-size: 14px; outline: none;
+      transition: border-color .2s;
+    }
+    .form-input:focus { border-color: #1a2744; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .form-full { grid-column: 1 / -1; }
+
+    .action-bar {
+      display: flex; gap: 8px; padding: 16px 20px;
+      border-top: 1px solid #eee; position: sticky; bottom: 0; background: #fff;
+    }
+    .action-bar .btn { flex: 1; padding: 12px; font-size: 15px; }
+
+    /* ── FAB ── */
+    .fab {
+      position: fixed; bottom: 24px; right: 20px;
+      width: 54px; height: 54px; border-radius: 50%;
+      background: #c9a84c; color: #fff;
+      font-size: 26px; border: none; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(201,168,76,.5);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 150; transition: transform .15s;
+    }
+    .fab:active { transform: scale(.93); }
+
+    /* ── 토스트 ── */
+    .toast {
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+      background: #1a2744; color: #fff; padding: 10px 20px;
+      border-radius: 24px; font-size: 14px; z-index: 300;
+      animation: fadeInOut 2.2s ease forwards;
+    }
+    @keyframes fadeInOut {
+      0%   { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      15%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+      75%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    .highlight { background: #fff3cd; border-radius: 2px; }
+    .badge {
+      display: inline-block; background: #eef0f8; color: #1a2744;
+      border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: 600; margin-right: 4px;
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ── 스토리지 ──────────────────────────────────────────────
+const STORAGE_KEY = 'klbnuri_data_v1';
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  // 첫 실행: INITIAL_DATA를 LocalStorage에 저장
+  const data = (INITIAL_DATA || []).map((r, i) => ({ ...r, _id: i + 1 }));
+  saveData(data);
+  return data;
+}
+function saveData(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+}
+
+// ── 컬럼 정의 ──────────────────────────────────────────────
+const COLUMNS = [
+  '이름','성별','생년월일','퇴직일','현재직장','부서명','직위','직장전화','직장주소','직장우편',
+  '휴대폰','비망록','E-mail','현주소1','현주소2','현주소3','집우편','지역번호','전화번호',
+  '고교','고교장소','고교입학','고교졸업',
+  '전문대','전문대장소','전문대과','전문입학','전문졸업',
+  '대학','대학장소','대학과','대학입학','대학졸업',
+  '대학원1','대학원1장소','대학원1과','대학원1전공','대학원1입학','대학원1졸업',
+  '대학원2','대학원2장소','대학원2과','대학원2입학','대학원2졸업',
+  '입행일'
+];
+
+const SECTIONS = [
+  { title: '기본 정보', fields: ['이름','성별','생년월일','휴대폰','E-mail','비망록'] },
+  { title: '직장 정보', fields: ['현재직장','부서명','직위','직장전화','직장주소','직장우편','입행일','퇴직일'] },
+  { title: '자택 정보', fields: ['현주소1','현주소2','현주소3','집우편','지역번호','전화번호'] },
+  { title: '고교', fields: ['고교','고교장소','고교입학','고교졸업'] },
+  { title: '전문대', fields: ['전문대','전문대장소','전문대과','전문입학','전문졸업'] },
+  { title: '대학교', fields: ['대학','대학장소','대학과','대학입학','대학졸업'] },
+  { title: '대학원 1', fields: ['대학원1','대학원1장소','대학원1과','대학원1전공','대학원1입학','대학원1졸업'] },
+  { title: '대학원 2', fields: ['대학원2','대학원2장소','대학원2과','대학원2입학','대학원2졸업'] },
+];
+
+// 검색 탭
+const SEARCH_TABS = [
+  { id: 'all',  label: '전체' },
+  { id: '이름', label: '이름' },
+  { id: '고교', label: '고교' },
+  { id: '대학', label: '대학' },
+  { id: '현재직장', label: '직장' },
+];
+
+function highlight(text, query) {
+  if (!query || !text) return text || '';
+  const idx = text.toString().indexOf(query);
+  if (idx < 0) return text;
+  return (
+    <span>
+      {text.slice(0, idx)}
+      <mark className="highlight">{text.slice(idx, idx + query.length)}</mark>
+      {text.slice(idx + query.length)}
+    </span>
+  );
+}
+
+function cardSub(r) {
+  const parts = [r.고교, r.대학, r.현재직장].filter(Boolean);
+  return parts.join(' | ') || '정보 없음';
+}
+
+// ── 상세보기 ──────────────────────────────────────────────
+function DetailPanel({ record, onClose, onEdit, onDelete }) {
+  return (
+    <div className="panel-overlay" onClick={onClose}>
+      <div className="panel" onClick={e => e.stopPropagation()}>
+        <div className="panel-header">
+          <h2>{record.이름}</h2>
+          <button className="panel-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="panel-body">
+          {SECTIONS.map(sec => {
+            const hasData = sec.fields.some(f => record[f]);
+            if (!hasData) return null;
+            return (
+              <div className="section" key={sec.title}>
+                <div className="section-title">{sec.title}</div>
+                <div className="field-grid">
+                  {sec.fields.map(f => (
+                    <div key={f} className={`field ${['비망록','현주소1','현주소2','현주소3','직장주소'].includes(f) ? 'full' : ''}`}>
+                      <span className="field-label">{f}</span>
+                      <span className={`field-value ${record[f] ? '' : 'empty-val'}`}>
+                        {record[f] || '—'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="action-bar">
+          <button className="btn btn-outline" onClick={onDelete}>삭제</button>
+          <button className="btn btn-gold" onClick={onEdit}>수정</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 편집/추가 폼 ──────────────────────────────────────────
+function EditPanel({ record, onClose, onSave }) {
+  const isNew = !record._id;
+  const [form, setForm] = useState(() => {
+    const init = {};
+    COLUMNS.forEach(c => { init[c] = record[c] || ''; });
+    return init;
+  });
+
+  const set = (field, val) => setForm(f => ({ ...f, [field]: val }));
+
+  const handleSave = () => {
+    if (!form.이름.trim()) { alert('이름은 필수입니다.'); return; }
+    onSave({ ...record, ...form });
+  };
+
+  return (
+    <div className="panel-overlay" onClick={onClose}>
+      <div className="panel" onClick={e => e.stopPropagation()}>
+        <div className="panel-header">
+          <h2>{isNew ? '신규 등록' : '정보 수정'}</h2>
+          <button className="panel-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="panel-body">
+          {SECTIONS.map(sec => (
+            <div className="section" key={sec.title}>
+              <div className="section-title">{sec.title}</div>
+              <div className="form-grid">
+                {sec.fields.map(f => (
+                  <div key={f} className={`form-field ${['비망록','현주소1','현주소2','현주소3','직장주소'].includes(f) ? 'form-full' : ''}`}>
+                    <label className="form-label">{f}</label>
+                    <input
+                      className="form-input"
+                      value={form[f]}
+                      onChange={e => set(f, e.target.value)}
+                      placeholder={f}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="action-bar">
+          <button className="btn btn-outline" onClick={onClose}>취소</button>
+          <button className="btn btn-gold" onClick={handleSave}>저장</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 메인 앱 ──────────────────────────────────────────────
+function App() {
+  const [data, setData] = useState(() => loadData());
+  const [query, setQuery] = useState('');
+  const [tab, setTab] = useState('all');
+  const [selected, setSelected] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [addNew, setAddNew] = useState(false);
+  const toastTimer = useRef(null);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2200);
+  };
+
+  const persist = (newData) => {
+    setData(newData);
+    saveData(newData);
+  };
+
+  // 검색 필터
+  const filtered = useCallback(() => {
+    if (!query.trim()) return data;
+    const q = query.trim();
+    if (tab === 'all') {
+      return data.filter(r =>
+        COLUMNS.some(c => r[c] && r[c].toString().includes(q))
+      );
+    }
+    if (tab === '대학') {
+      return data.filter(r =>
+        ['대학','대학원1','대학원2','전문대'].some(c => r[c] && r[c].includes(q))
+      );
+    }
+    return data.filter(r => r[tab] && r[tab].toString().includes(q));
+  }, [data, query, tab])();
+
+  const handleSelect = (r) => setSelected(r);
+
+  const handleEdit = () => {
+    setEditing(selected);
+    setSelected(null);
+  };
+
+  const handleDelete = () => {
+    if (!window.confirm(`"${selected.이름}" 을(를) 삭제하시겠습니까?`)) return;
+    persist(data.filter(r => r._id !== selected._id));
+    setSelected(null);
+    showToast('삭제되었습니다.');
+  };
+
+  const handleSave = (updated) => {
+    if (updated._id) {
+      persist(data.map(r => r._id === updated._id ? updated : r));
+      showToast('수정되었습니다.');
+    } else {
+      const maxId = data.reduce((m, r) => Math.max(m, r._id || 0), 0);
+      persist([...data, { ...updated, _id: maxId + 1 }]);
+      showToast('등록되었습니다.');
+    }
+    setEditing(null);
+    setAddNew(false);
+  };
+
+  return (
+    <>
+      {/* 헤더 */}
+      <div className="header">
+        <div>
+          <div className="header-title">KLB<span>nuri</span></div>
+        </div>
+        <div className="header-count">총 {data.length}명 · 검색 {filtered.length}명</div>
+      </div>
+
+      {/* 검색바 */}
+      <div className="search-bar">
+        <div className="search-row">
+          <input
+            className="search-input"
+            placeholder="검색어를 입력하세요"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            autoCapitalize="off"
+          />
+          {query && (
+            <button className="btn btn-outline btn-sm" onClick={() => setQuery('')}>지우기</button>
+          )}
+        </div>
+        <div className="search-tabs">
+          {SEARCH_TABS.map(t => (
+            <div
+              key={t.id}
+              className={`tab ${tab === t.id ? 'active' : ''}`}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 리스트 */}
+      <div className="list-wrap">
+        {filtered.length === 0 ? (
+          <div className="empty">
+            <div className="empty-icon">🔍</div>
+            <div>검색 결과가 없습니다</div>
+          </div>
+        ) : (
+          filtered.slice(0, 200).map(r => (
+            <div key={r._id} className="card" onClick={() => handleSelect(r)}>
+              <div className="card-main">
+                <div className="avatar">{(r.이름 || '?')[0]}</div>
+                <div className="card-info">
+                  <div className="card-name">{highlight(r.이름, tab === '이름' || tab === 'all' ? query : '')}</div>
+                  <div className="card-sub">{highlight(cardSub(r), query)}</div>
+                </div>
+                <div className="card-arrow">›</div>
+              </div>
+            </div>
+          ))
+        )}
+        {filtered.length > 200 && (
+          <div className="empty" style={{padding: '16px', fontSize: '13px'}}>
+            검색어를 입력하면 더 정확한 결과를 볼 수 있습니다 (현재 상위 200개 표시)
+          </div>
+        )}
+      </div>
+
+      {/* FAB */}
+      <button className="fab" onClick={() => setAddNew(true)}>＋</button>
+
+      {/* 상세보기 */}
+      {selected && (
+        <DetailPanel
+          record={selected}
+          onClose={() => setSelected(null)}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      )}
+
+      {/* 수정 */}
+      {editing && (
+        <EditPanel
+          record={editing}
+          onClose={() => setEditing(null)}
+          onSave={handleSave}
+        />
+      )}
+
+      {/* 신규 등록 */}
+      {addNew && (
+        <EditPanel
+          record={{}}
+          onClose={() => setAddNew(false)}
+          onSave={handleSave}
+        />
+      )}
+
+      {/* 토스트 */}
+      {toast && <div className="toast">{toast}</div>}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/klbnuri/sw.js');
+  });
+}
+</script>
+</body>
+</html>
