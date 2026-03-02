@@ -272,11 +272,11 @@ const COLUMNS = [
   '대학','대학장소','대학과','대학입학','대학졸업',
   '대학원1','대학원1장소','대학원1과','대학원1전공','대학원1입학','대학원1졸업',
   '대학원2','대학원2장소','대학원2과','대학원2입학','대학원2졸업',
-  '입행일'
+  '입행일','사망일자'
 ];
 
 const SECTIONS = [
-  { title: '기본 정보', fields: ['이름','성별','생년월일','휴대폰','E-mail','비망록'] },
+  { title: '기본 정보', fields: ['이름','성별','생년월일','사망일자','휴대폰','E-mail','비망록'] },
   { title: '직장 정보', fields: ['현재직장','부서명','직위','직장전화','직장주소','직장우편','입행일','퇴직일'] },
   { title: '자택 정보', fields: ['현주소1','현주소2','현주소3','집우편','지역번호','전화번호'] },
   { title: '고교', fields: ['고교','고교장소','고교입학','고교졸업'] },
@@ -386,7 +386,9 @@ function DetailPanel({ record, onClose, onEdit, onDelete }) {
         </div>
         <div className="panel-body">
           {SECTIONS.map(sec => {
-            const hasData = sec.fields.some(f => record[f]);
+            // 섹션 대표 필드(첫 번째)가 있으면 전체 표시, 없으면 섹션 숨김
+            const leadField = sec.fields[0];
+            const hasData = record[leadField];
             if (!hasData) return null;
             return (
               <div className="section" key={sec.title}>
@@ -569,9 +571,14 @@ function App() {
             enterKeyHint="search"
             onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
           />
-          {query && (
-            <button className="btn btn-outline btn-sm" onClick={() => { setQuery(''); document.activeElement?.blur(); }}>지우기</button>
-          )}
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => { document.activeElement?.blur(); }}
+          >검색</button>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => { setQuery(''); document.activeElement?.blur(); }}
+          >지우기</button>
         </div>
         <div className="search-tabs">
           {SEARCH_TABS.map(t => (
