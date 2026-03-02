@@ -331,7 +331,7 @@ function SettingsPanel({ onClose, fontSize, setFontSize }) {
     { label: '크게', value: 17 },
     { label: '매우 크게', value: 20 },
   ];
-  const currentLabel = SIZES.find(s => s.value === fontSize)?.label || '보통';
+  const currentLabel = ((SIZES.find(s => s.value === fontSize) || {}).label) || '보통';
 
   const decrease = () => {
     const idx = SIZES.findIndex(s => s.value === fontSize);
@@ -573,11 +573,11 @@ function App() {
           />
           <button
             className="btn btn-primary btn-sm"
-            onClick={() => { document.activeElement?.blur(); }}
+            onClick={() => { if(document.activeElement) document.activeElement.blur(); }}
           >검색</button>
           <button
             className="btn btn-outline btn-sm"
-            onClick={() => { setQuery(''); document.activeElement?.blur(); }}
+            onClick={() => { setQuery(''); if(document.activeElement) document.activeElement.blur(); }}
           >지우기</button>
         </div>
         <div className="search-tabs">
@@ -585,7 +585,7 @@ function App() {
             <div
               key={t.id}
               className={`tab ${tab === t.id ? 'active' : ''}`}
-              onClick={() => { setTab(t.id); document.activeElement?.blur(); }}
+              onClick={() => { setTab(t.id); if(document.activeElement) document.activeElement.blur(); }}
             >
               {t.label}
             </div>
