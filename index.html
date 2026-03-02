@@ -361,6 +361,26 @@ function SettingsPanel(props) {
             <div className="size-preview-name">홍길동</div>
             <div className="size-preview-sub" style={{fontSize: (fontSize - 2) + 'px'}}>서울고 | 서울대 | 장기신용은행</div>
           </div>
+
+          <div style={{height:'1px', background:'#f0f0f0', margin:'24px 0'}}></div>
+          <div className="settings-section-title">데이터 관리</div>
+
+          <div className="settings-row">
+            <div className="settings-label">
+              자료 내보내기
+              <small>전체 데이터를 파일로 저장·공유</small>
+            </div>
+            <button className="btn btn-primary btn-sm" onClick={onExport}>내보내기</button>
+          </div>
+
+          <div className="settings-row">
+            <div className="settings-label">
+              자료 가져오기
+              <small>내보낸 파일을 불러와 복원</small>
+            </div>
+            <button className="btn btn-outline btn-sm" onClick={onImport}>가져오기</button>
+          </div>
+          <input type="file" id="import-file-input" accept=".json" style={{display:'none'}} />
         </div>
       </div>
     </div>
@@ -534,13 +554,78 @@ function App() {
     saveData(newData);
   }
 
+  // ── 내보내기: JSON 파일 생성 후 공유/다운로드 ──
+  function handleExport() {
+    try {
+      var exportData = {
+        version: '3.0',
+        exportDate: new Date().toISOString().slice(0,10),
+        count: data.length,
+        records: data
+      };
+      var jsonStr = JSON.stringify(exportData, null, 2);
+      var blob = new Blob([jsonStr], {type: 'application/json'});
+      var url = URL.createObjectURL(blob);
+      var filename = 'klbnuri_' + new Date().toISOString().slice(0,10) + '.json';
+
+      // Web Share API (카카오톡 등 공유) 지원 여부 확인
+      if (navigator.share && navigator.canShare) {
+        var file = new File([blob], filename, {type: 'application/json'});
+        if (navigator.canShare({files: [file]})) {
+          navigator.share({
+            title: 'KLBnuri 자료',
+            text: 'KLBnuri 회원 명단 (' + data.length + '명)',
+            files: [file]
+          }).catch(function(e) { console.log('share cancelled', e); });
+          return;
+        }
+      }
+      // 공유 불가시 직접 다운로드
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('파일로 저장되었습니다.');
+    } catch(e) {
+      showToast('내보내기 오류: ' + e.message);
+    }
+  }
+
+  // ── 가져오기: JSON 파일 읽어서 LocalStorage 덮어쓰기 ──
+  function handleImport() {
+    var input = document.getElementById('import-file-input');
+    if (!input) return;
+    input.onchange = function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        try {
+          var parsed = JSON.parse(ev.target.result);
+          var records = parsed.records || parsed;
+          if (!Array.isArray(records)) { showToast('올바른 파일이 아닙니다.'); return; }
+          if (!window.confirm(records.length + '명의 자료를 불러옵니다.\n현재 데이터는 덮어씌워집니다. 계속하시겠습니까?')) return;
+          persist(records);
+          showToast(records.length + '명 불러오기 완료!');
+        } catch(e) {
+          showToast('파일 읽기 오류: ' + e.message);
+        }
+      };
+      reader.readAsText(file);
+      input.value = '';
+    };
+    input.click();
+  }
+
   // 검색 필터
   var filtered = data.filter(function(r) {
     if (!query.trim()) return true;
     var q = query.trim();
     // '사망' 키워드로 검색하면 사망일자가 입력된 사람 전체 반환
     if (q === '사망' || q === '사망자') {
-      return !!r['사망일자'];
+      var dv = r['사망일자'];
+      return !!(dv && dv.toString().trim() !== '');
     }
     if (tab === 'all') {
       return COLUMNS.some(function(c) { return r[c] && r[c].toString().indexOf(q) >= 0; });
@@ -660,6 +745,8 @@ function App() {
           onClose={function() { setShowSettings(false); }}
           fontSize={fontSize}
           setFontSize={setFontSize}
+          onExport={handleExport}
+          onImport={handleImport}
         />
       )}
 
